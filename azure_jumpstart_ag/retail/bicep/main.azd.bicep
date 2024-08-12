@@ -64,6 +64,9 @@ param subnetNameCloudAksStaging string = 'Ag-Subnet-Staging'
 @description('Name of the inner-loop AKS subnet in the cloud virtual network')
 param subnetNameCloudAksInnerLoop string = 'Ag-Subnet-InnerLoop'
 
+@description('Static IP Address Assignment for Control Plane IP of AKS-Arc Cluster')
+param aksControlPlaneIP string
+
 @description('The name of the Staging Kubernetes cluster resource')
 param aksStagingClusterName string = 'Ag-AKS-Staging'
 
@@ -93,6 +96,17 @@ param industry string = 'retail'
 var templateBaseUrl = 'https://raw.githubusercontent.com/${githubAccount}/azure_arc/${githubBranch}/azure_jumpstart_ag/'
 
 targetScope = 'subscription'
+
+// Build LNet ID from LNet name
+@description('The name of LNet resource, provide this parameter during deployment')
+param hciLogicalNetworkName string
+
+// Build custom location ID from custom location name
+@description('The name of custom location resource, provide this parameter during deployment')
+param hciCustomLocationName string
+var customLocationId = resourceId('Microsoft.ExtendedLocation/customLocations', hciCustomLocationName) 
+
+
 
 resource rg 'Microsoft.Resources/resourceGroups@2020-06-01' = {
   name: '${envName}-rg'
@@ -127,7 +141,7 @@ module storageAccountDeployment 'mgmt/storageAccount.bicep' = {
     location: location
   }
 }
-
+/*
 module kubernetesDeployment 'kubernetes/aks.bicep' = {
   name: 'kubernetesDeployment'
   scope: rg
@@ -137,6 +151,22 @@ module kubernetesDeployment 'kubernetes/aks.bicep' = {
     aksSubnetNameStaging: subnetNameCloudAksStaging
     spnClientId: spnClientId
     spnClientSecret: spnClientSecret
+    location: location
+    sshRSAPublicKey: sshRSAPublicKey
+    acrName: acrName
+    customLocationId: customLocationId
+
+  }
+}
+*/
+module kubernetesDeployment 'kubernetes/aks-arc.bicep' = {
+  name: 'kubernetesDeployment'
+  scope: rg
+  params: {
+    aksStagingClusterName: aksStagingClusterName
+    aksControlPlaneIP: aksControlPlaneIP
+    hciCustomLocationName: hciCustomLocationName
+    hciLogicalNetworkName: hciLogicalNetworkName
     location: location
     sshRSAPublicKey: sshRSAPublicKey
     acrName: acrName
